@@ -6,12 +6,16 @@ This repository contains the simulation codes used in the study "Transient Disto
 
 ## Repository structure
 - `20240409/` & `20240715/`: Source code for two events
-- `Backward_MSS_ED_Single`: Main script for test-particle simulation
+- `Backward_MSS_ED_Single`: Main script for test-particle simulation; 
 - `Traj_particle_bounce_drift_ED`: Main function to trace particles
 -  `Calc_B_ED.m` & `Calc_E_ED.m`: Functions to determine the magnetic and electric fields
 -  `PreCalc_A_0409.mat` & `PreCalc_A_0715.mat`: MSS1 observations, with the raw data available in https://doi.org/10.5281/zenodo.16925320
 -  `igrfmex_wrapper_GC.m` & `igrfmex.mexmaca64`: Functions to link the original geopack source files
-- `README.md` : This document
 
 ## Requirements
-- Programming language: Matlab R2024b, Mac OS 15.6
+- Programming language: MATLAB R2024b
+- Environment: Mac OS 15.6
+
+## Reproducing paper figures
+- Figures 5 & 9: Directly run `Backward_MSS_ED_Single`
+- Figures 4 & 8: Expand the loop range for energy, time, and pitch angles in `Backward_MSS_ED_Single` to obtain the energy spectrogram and pitch angle distributions
