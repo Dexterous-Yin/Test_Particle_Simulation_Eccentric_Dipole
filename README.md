@@ -17,5 +17,5 @@ This repository contains the simulation codes used in the study "Transient Disto
 - Environment: Mac OS 15.6
 
 ## Reproducing paper figures
-- Figures 5 & 9: Directly run `Backward_MSS_ED_Single`
-- Figures 4 & 8: Expand the loop range for energy, time, and pitch angles in `Backward_MSS_ED_Single` to obtain the energy spectrogram and pitch angle distributions
+- Figures 5 & 9: Directly run `Backward_MSS_ED_Single.m`
+- Figures 4 & 8: Expand the loop range for energy, time, and pitch angles in `Backward_MSS_ED_Single.m` to obtain the energy spectrogram and pitch angle distributions
