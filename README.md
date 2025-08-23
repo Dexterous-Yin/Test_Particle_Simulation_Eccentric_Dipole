@@ -6,8 +6,8 @@ This repository contains the simulation codes used in the study "Transient Disto
 
 ## Repository structure
 - `20240409/` & `20240715/`: Source code for two events
-- `Backward_MSS_ED_Single`: Main script for test-particle simulation; 
-- `Traj_particle_bounce_drift_ED`: Main function to trace particles
+- `Backward_MSS_ED_Single.m`: Main script for test-particle simulation; 
+- `Traj_particle_bounce_drift_ED.m`: Main function to trace particles
 -  `Calc_B_ED.m` & `Calc_E_ED.m`: Functions to determine the magnetic and electric fields
 -  `PreCalc_A_0409.mat` & `PreCalc_A_0715.mat`: MSS1 observations, with the raw data available in https://doi.org/10.5281/zenodo.16925320
 -  `igrfmex_wrapper_GC.m` & `igrfmex.mexmaca64`: Functions to link the original geopack source files
