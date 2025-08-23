@@ -37,7 +37,7 @@ load('PreCalc_A_0409.mat');
 E_set = energy_mid_MSS; %[keV]
 pos_geo_set = pos_geo_in_Re;
 sim_trange_set = time_date_MSS;
-pa_set = [5:10:180];
+pa_set = 0:5:90; %[5:10:180];
 
 % trans particle's position from GEO to approximate SM
 L_set = zeros(size(sim_trange_set));
@@ -122,7 +122,7 @@ MLT_set = Phi_set./pi*12+12;
 loopparams = [];
 E_loop_range = 11; %1:length(energy_mid);
 T_loop_range = 2011; %2011; %1771; %1891; %1:length(time_date_MSS);
-PA_loop_range = 9; %1:length(pa_set);
+PA_loop_range = 18; %1:length(pa_set);
 for Ei = E_loop_range
     for PAi = PA_loop_range
         PAnow = pa_set(PAi);
