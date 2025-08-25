@@ -8,7 +8,7 @@ The codes conduct test-particle simulations in an eccentric dipole magnetic fiel
 
 ---
 
-## Repository structure
+## 📂 Repository structure
 -  `20240409/`, `20240715/` – Source code for two SAA distortion events  
 - `Backward_MSS_ED_Single.m` – Main script for test-particle simulation  
 - `Traj_particle_bounce_drift_ED.m` – Function to trace particle trajectories  
@@ -16,13 +16,13 @@ The codes conduct test-particle simulations in an eccentric dipole magnetic fiel
 - `PreCalc_A_0409.mat`, `PreCalc_A_0715.mat` – Pre-processed MSS1 observations (raw data available at [Zenodo](https://doi.org/10.5281/zenodo.16925320))  
 - `igrfmex_wrapper_GC.m`, `igrfmex.mexmaca64` – Wrapper functions to link the original geopack source files  
 
-## Requirements
+## ⚙️ Requirements
 - MATLAB R2024b  
 - Tested on macOS 15.6 (should also work on other OS with MATLAB installed) 
 
-## Reproducing paper figures
+## 📈 Reproducing paper figures
 - **Figures 5 & 9** – Run `Backward_MSS_ED_Single.m` directly  
 - **Figures 4 & 8** – Modify the loop ranges (energy, time, and pitch angle) in `Backward_MSS_ED_Single.m` to obtain energy spectrograms and pitch angle distributions
 
-## 📄 License
+## 📃 License
 This code is released under the MIT License. See the `LICENSE` file for details.  
