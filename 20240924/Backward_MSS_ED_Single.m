@@ -1,10 +1,10 @@
-%{
+%{ 
 This script is used to trace particle's mapping point at equator in eccentric dipole field.
 %}
 
 % Basic settings
 % eccentric dipole field settings
-timenow = datetime(2024,07,15,22,00,00);
+timenow = datetime(2024,09,24,18,00,00);
 timenow_datenum = datenum(timenow);
 [B0,thetan,phin,x0,y0,z0,trans_matrix] = recalc_ED_params(timenow_datenum);
 % MEX geopack
@@ -25,16 +25,17 @@ phi0 = atan2(Earth_center_pos_mag(1),Earth_center_pos_mag(2))/pi*180;
 mirrphi = 90-phi0;
 
 % spacecraft data
-trange = ['2024-07-15/22:10:00';'2024-07-15/22:50:00'];
+trange = ['2024-09-24/18:23:00';'2024-09-24/19:10:00'];
 trange_datenum = datenum(trange,'yyyy-mm-dd/HH:MM:SS');
 trange_datetime = datetime(trange_datenum,"ConvertFrom",'datenum');
+pa_width = 10;
 %
 % load MSS data
-load('./PreCalc_A_0715.mat');
+load('PreCalc_B_0924.mat');
 
 % particle tracing settings
 E_set = energy_mid_MSS; %[keV]
-pos_geo_set = pos_geo_in_Re;
+pos_geo_set = pos_geo_in_Re';
 sim_trange_set = time_date_MSS;
 pa_set = 0:5:90; %[5:10:180];
 
@@ -42,8 +43,10 @@ pa_set = 0:5:90; %[5:10:180];
 L_set = zeros(size(sim_trange_set));
 MLAT_set = zeros(size(sim_trange_set));
 Phi_set = zeros(size(sim_trange_set));
+Phi_mag_set = zeros(size(sim_trange_set));
 PAeq_set = zeros(length(pa_set),length(sim_trange_set));
 DLC_set = zeros(size(sim_trange_set));
+DLC_Height = zeros(size(sim_trange_set));
 BLC_set = zeros(size(sim_trange_set));
 for Ti = 1:length(sim_trange_set)
     timestart = datetime(sim_trange_set(Ti),'ConvertFrom','datenum');
@@ -74,7 +77,7 @@ for Ti = 1:length(sim_trange_set)
     L_set(Ti) = L_ini_sm;
     Phi_set(Ti) = atan2(pos_ini_sm(2),pos_ini_sm(1));
     MLAT_set(Ti) = Lat_ini_sm/pi*180;
-
+    
     Phi_mag_now = atan2(pos_ini_mag(2),pos_ini_mag(1));
     loss_slat = fzero(@(s) sqrt((L_ini_sm.*(1-s.^2).^(3/2).*cos(Phi_mag_now)-Earth_center_pos_mag(1)).^2+(L_ini_sm.*(1-s.^2).^(3/2).*sin(Phi_mag_now)-Earth_center_pos_mag(2)).^2+(L_ini_sm.*(1-s.^2).*s-Earth_center_pos_mag(3)).^2)-1-100/6371.2, 0);
     if loss_slat>0
@@ -86,7 +89,7 @@ for Ti = 1:length(sim_trange_set)
     else
         BLC_set(Ti) = asin(sqrt(Bloss_ratio))/pi*180;
     end
-    
+    Phi_mag_set(Ti) = Phi_mag_now;
 
     for PAi=1:length(pa_set)
         PAeq_ini_sm = asin(sqrt(Beq_ratio*sind(pa_set(PAi))^2))/pi*180;
@@ -109,36 +112,16 @@ for Ti = 1:length(sim_trange_set)
             temp_ratio = (sqrt(1+3*sin(Lat_ini_sm)^2)/cos(Lat_ini_sm)^6)/(sqrt(1+3*sLat^2)/(1-sLat^2)^3);
             DLC_set(Ti) = asin(sqrt(temp_ratio))/pi*180;
         end
+        DLC_Height(Ti) = (sqrt((L_now.*(1-sLat.^2).^(3/2).*cos(Phi_mag_now)-Earth_center_pos_mag(1)).^2+(L_now.*(1-sLat.^2).^(3/2).*sin(Phi_mag_now)-Earth_center_pos_mag(2)).^2+(L_now.*(1-sLat.^2).*(-sLat)-Earth_center_pos_mag(3)).^2)-1)*RE_km;
     end
 end
 MLT_set = Phi_set./pi*12+12;
 
-%% electric field settings
-% ULF wave
-Eparams.ULF_m = 1;
-Eparams.ULF_omega = 2*pi*6e-3;
-Eparams.E0 = 15; %[mV/m]
-Eparams.t0 = datenum(sim_trange_set(1771));
-Eparams.Phi0 = Phi_set(1771); 
-Eparams.phase0 = -pi/2*3;
-Eparams.tau1 = 80;
-Eparams.tau2 = 500;
-Eparams.peaktime = datenum(datetime(2024,07,15,22,31,00));
-
-% background
-duration = 7*60;
-Eparams.E_PeakTime = datetime(2024,07,15,22,35,30);
-Eparams.E_Amplitude = [-1.5,8,-6.5]; %[mV/m]
-Eparams.E_Parameters = [0.1,duration/2];  %[alpha,D]
-Eparams.E_ZeroTime = datetime(2024,07,15,22,00,00); 
-
-params.Eparams = Eparams;
-
 %% Tracing part
 % set tracing parameter sets
 loopparams = [];
-E_loop_range = 11; %1:length(time_date_MSS); 
-T_loop_range = 1681; %1771; %1681; %1351; %1:length(time_date_MSS); 
+E_loop_range = 11; %1:length(energy_mid);
+T_loop_range = 1831; %2071; %1951; %1831; %1:length(time_date_MSS);
 PA_loop_range = 18; %1:length(pa_set);
 for Ei = E_loop_range
     for PAi = PA_loop_range
@@ -158,7 +141,7 @@ Init_E = zeros(1,loopparams_n);
 Init_L = zeros(1,loopparams_n);
 Init_PA = zeros(1,loopparams_n);
 Init_MLT = zeros(1,loopparams_n);
-Init_MinHeight = zeros(1,loopparams_n);
+Min_Height = zeros(1,loopparams_n);
 
 preview = 1;
 height_bound = 100;
@@ -170,7 +153,7 @@ for loopi = 1:loopparams_n
     % theoretical drift frequency
     theo_omega_d = omega_d(E_set(Ei)*params.keV,params.ele_m,params.ele_q,PAeq_set(PAi,Ti)/180*pi,L_set(Ti),params)+2*pi/24/60/60;
     % trace particle's properties, r, phi, PA
-    [Particle,Fields,Time,Numerics] = Traj_setting(sim_trange_set,E_set,L_set,Phi_set,PAeq_set,Ei,PAi,Ti,theo_omega_d,Eparams);
+    [Particle,Fields,Time,Numerics] = Traj_setting(sim_trange_set,E_set,L_set,Phi_set,PAeq_set,Ei,PAi,Ti,theo_omega_d);
     % solve trajectory
     [Time_new, Res, Diagnostics] = Traj_particle_bounce_drift_ED(Particle, Fields, Time, Numerics, params);
 
@@ -193,17 +176,16 @@ for loopi = 1:loopparams_n
     GEOlon = atan2(GEOPOS(2,:),GEOPOS(1,:))./pi*180;
     GEOlonMIRR = atan2(squeeze(GEOPOSMIRR(2,2,:)),squeeze(GEOPOSMIRR(2,1,:)))./pi*180;
     GEOlat = asin(GEOPOS(3,:)/sqrt(GEOPOS(1,:).^2+GEOPOS(2,:).^2+GEOPOS(3,:).^2))./pi*180;
-    minHeight = min(Height,[],'all');
+    Min_Height(loopi) = min(Height,[],'all');
 
     % store
-    if isempty(Diagnostics.isloss) && minHeight>height_bound
+    if isempty(Diagnostics.isloss) && min(Height,[],'all')>height_bound
         Init_E(loopi) = W_keV(end);
         Init_L(loopi) = R(end);
         Init_PA(loopi) = PA(end);
         Init_MLT(loopi) = MLT(end);
-        Init_MinHeight(loopi) = minHeight;
     end
-    % if ~isempty(Diagnostics.isloss)
+    % if isempty(Diagnostics.isloss)
     %     break
     % end
 
@@ -215,7 +197,6 @@ InitialState.E = zeros(length(E_set),length(pa_set),length(sim_trange_set));
 InitialState.L = zeros(length(E_set),length(pa_set),length(sim_trange_set));
 InitialState.PA = zeros(length(E_set),length(pa_set),length(sim_trange_set));
 InitialState.MLT = zeros(length(E_set),length(pa_set),length(sim_trange_set));
-InitialState.MinHeight = zeros(length(E_set),length(pa_set),length(sim_trange_set));
 
 for loopi = 1:loopparams_n
     Ei = loopparams(loopi,1);
@@ -225,9 +206,15 @@ for loopi = 1:loopparams_n
     InitialState.L(Ei,PAi,Ti) = Init_L(loopi);
     InitialState.PA(Ei,PAi,Ti) = Init_PA(loopi);
     InitialState.MLT(Ei,PAi,Ti) = Init_MLT(loopi);
-    InitialState.MinHeight(Ei,PAi,Ti) = Init_MinHeight(loopi);
 end
-% save(['Result_',datestr(now,'mmddHHMM'),'.mat']);
+
+duration = 480;
+E_PeakTime = datetime(2024,09,24,18,50,00);
+E_Amplitude = [-1.5,8,-6.5]; %[mV/m]
+E_Parameters = [0.1,duration/2];  %[alpha,sigma]
+E_ZeroTime = datetime(2024,09,24,18,00,00);
+% save(['Result_PAD_',datestr(now,'mmddHHMM'),'.mat']);
+
 
 %% PLOT PART
 timestart = datetime(sim_trange_set(Ti),'ConvertFrom','datenum');
@@ -235,17 +222,12 @@ fig = figure('Color',[1 1 1]);
 layout = tiledlayout(6, 1, 'TileSpacing', 'tight', 'Padding', 'compact');
 timestart_num = datenum(timestart);
 Time_num = timestart_num+Time./60./60./24;
-if Ti == 1351
-    xlim_range = [datenum('2024-07-15/21:50:00'),timestart_num]; 
+xlim_range = [datenum('2024-09-24/17:10:00'),timestart_num]; 
+if Ti == 2071
+    xlim_range = [datenum('2024-09-24/17:35:00'),timestart_num]; 
 end
-if Ti == 1591
-    xlim_range = [datenum('2024-07-15/21:20:00'),timestart_num]; 
-end
-if Ti == 1681
-    xlim_range = [datenum('2024-07-15/21:40:00'),timestart_num]; 
-end
-if Ti == 1771
-    xlim_range = [datenum('2024-07-15/21:05:00'),timestart_num]; 
+if Ti == 1951
+    xlim_range = [datenum('2024-09-24/17:10:00'),timestart_num]; 
 end
 xlim_id = find(Time_num>=xlim_range(1) & Time_num<=xlim_range(2));
 xticks_datetime = dateshift(timestart+seconds(min(Time)),"start","hour","previous"):minutes(10):timestart;
@@ -271,7 +253,7 @@ for southid = [2,1]
     south_mirr_lon = atan2(south_mirr_pos(2,:),south_mirr_pos(1,:))./pi*180;
     south_mirr_lat = asin(south_mirr_pos(3,:)./sqrt(south_mirr_pos(1,:).^2+south_mirr_pos(2,:).^2+south_mirr_pos(3,:).^2))./pi*180;
     south_mirr_height = Height_mirr(southid,:);
-    south_mirr_id = xlim_id(1):100:xlim_id(end);
+    south_mirr_id = xlim_id(1):300:xlim_id(end);
     if south_mirr_id(end) ~= xlim_id(end)
         south_mirr_id = [south_mirr_id,xlim_id(end)];
     end
@@ -292,6 +274,8 @@ cbar.LineWidth = 1;
 cbar.TickLength = 0.02;
 set(gca,'XTick',[-180:30:150],'XTickLabelRotation',0,'YTick',[-60:20:60]);
 title(string(timestart,'yyyy-MM-dd/HH:mm:ss'));
+% set(gca,'TickDir','out','TickLength',[0.012,0.03]);
+% set(gca,'XTickLabel',{});
 
 % window control
 % screen size
@@ -303,7 +287,7 @@ screenHeight = screenSize(4);
 fig.Units = 'pixels'; 
 fig.Position(2) = 0; 
 fig.Position(4) = screenHeight;
-fig.Position(3) = 480; %530;
+fig.Position(3) = 480;
 fig.Position(1) = (screenSize(3) - fig.Position(3)) / 2;
 
 %
@@ -313,41 +297,30 @@ colororder({'k','b'})
 yyaxis left
 plot(Time_num,GEOlon,'k-','LineWidth',2);
 set(gca,'YMinorTick','on'); ylabel('GEO Lon (deg)','FontSize',16);
-if Ti == 1351
-    ylim([-40,10]);
-end
-if Ti == 1591
-    ylim([-60,25]);
-end
-if Ti == 1681
-    ylim([-40,40]);
-end
-if Ti == 1771
+if Ti == 1951
     ylim([-70,50]);
-    set(gca,'YTick',[-80:20:80]);
+end
+if Ti == 2071
+    ylim([-20,60]);
 end
 yyaxis right
 plot(Time_num,smoothdata(MLT,"movmean",1),'b-','LineWidth',2);
 set(gca,'XTick',xticks,'XTickLabel',{});
 set(gca,'XMinorTick','on','YMinorTick','on','LineWidth',1.5,'FontSize', 14, 'XTickLabel',{});
 ylabel('MLT','FontSize',16); % ylim([0,24]); %ylim(refine(ylim));
-ylim([14,24]);
-if Ti == 1351
-    ylim([19,23]);
+ylim([12,24]);
+if Ti == 2071
+    ylim([16,24]);
 end
-if Ti == 1591 || Ti==1681 || Ti==1771
-    ylim([0,24]);
+if Ti == 1951
+    ylim([13,24]);
 end
 xlim(xlim_range);
+% set(gca,'TickDir','out','TickLength',[0.012,0.03]);
 
 % Height
 nexttile
-plot(xlim_range,[100,100],'k--','LineWidth',1.5); hold on
-% plot(xlim_range,[minHeight,minHeight],'k--','LineWidth',1); hold on
-% if Ti>0 %==1831
-%     plot([min(Time_num),max(Time_num)],[height_A(T_loop_range),height_A(T_loop_range)],'k--','LineWidth',1); hold on;
-%     text(Time_num(1), height_A(T_loop_range), [sprintf('%5.1f', height_A(T_loop_range)),'km'], 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top', 'FontSize', 14);
-% end
+plot(xlim_range,[100,100],'k--','LineWidth',1.5); hold on;
 set(gca,'XMinorTick','on','YMinorTick','on','LineWidth',1.5,'FontSize', 14, 'XTickLabel',{});
 if Height(1,end)<=101
     plot(Time_num,smoothdata(Height(1,:),"movmean",1),'k-','LineWidth',2); hold on;
@@ -358,23 +331,23 @@ else
     [minHeight,minid] = min(Height(2,:));
     if isempty(Diagnostics.isloss) 
         % plot([Time_num(minid),Time_num(minid)],[0,1000],'k--','LineWidth',1); hold on;
-        text(Time_num(1), minHeight, [sprintf('%5.1f', minHeight),'km'], 'HorizontalAlignment', 'left', 'VerticalAlignment', 'middle', 'FontSize', 14);
+        text(Time_num(1), minHeight, [sprintf('%5.1f', minHeight),'km'], 'HorizontalAlignment', 'left', 'VerticalAlignment', 'top', 'FontSize', 14);
     end
+    
 end
 xlim(xlim_range);
-if Ti == 1351
-    ylim([50,500]);
-end
-if Ti == 1591
+if Ti == 1831
     ylim([50,700]);
+    set(gca,'YTick',100:200:700,'YTickLabel',[100:200:700]);
 end
-if Ti == 1681 
-    ylim([50,700]);
+if Ti == 2071
+    ylim([50,750]);
 end
-if Ti == 1771 
+if Ti == 1951
     ylim([50,800]);
 end
 set(gca,'XTick',xticks,'XTickLabel',{});
+% set(gca,'TickDir','out','TickLength',[0.012,0.03]);
 
 % Ephi
 nexttile
@@ -382,11 +355,15 @@ plot(Time_num,smoothdata(E_background(2,:),"movmean",1),'k-','LineWidth',2); hol
 set(gca,'XMinorTick','on','YMinorTick','on','LineWidth',1.5,'FontSize', 14);
 ylabel('Ephi (mV/m)','FontSize',16);
 xlim(xlim_range);
-ylim([-20,20]);
-if Ti == 1351
-    ylim([-10,15]);
+ylim([-4,0]);
+if Ti == 1951
+    ylim([-4,0]);
 end
-set(gca,'XTick',xticks,'XTickLabel',{},'YTick',[-20:10:20]);
+if Ti == 2071
+    ylim([-4,0]);
+end
+set(gca,'XTick',xticks,'XTickLabel',{});
+% set(gca,'TickDir','out','TickLength',[0.012,0.03]);
 
 % W
 nexttile
@@ -395,21 +372,15 @@ plot(Time_num,smoothdata(W_keV,"movmean",1),'k-','LineWidth',2); hold on;
 set(gca,'XMinorTick','on','YMinorTick','on','LineWidth',1.5,'FontSize', 14, 'XTickLabel',{});
 ylabel('Energy (keV)','FontSize',16); % ylim(refine(ylim)); % ylim([99,101]); % ylim(refine(ylim));
 xlim(xlim_range);
-ylim([65,73]);
-if Ti == 1351
-    ylim([71,75]);
+ylim([64,73]);
+if Ti == 2071
+    ylim([62,73]);
 end
-if Ti == 1591
-    ylim([64,72]);
-end
-if Ti == 1681
-    ylim([65,73]);
-end
-if Ti == 1771
-    ylim([60,73]);
-    set(gca,'YTick',[60:2:80]);
+if Ti == 1951
+    ylim([62,73]);
 end
 set(gca,'XTick',xticks,'XTickLabel',{});
+% set(gca,'TickDir','out','TickLength',[0.012,0.03]);
 
 
 % R
@@ -417,26 +388,17 @@ nexttile
 plot(Time_num,smoothdata(R,"movmean",1),'k-','LineWidth',2);
 set(gca,'XMinorTick','on','YMinorTick','on','LineWidth',1.5,'FontSize', 14);
 ylabel('L','FontSize',16); 
-ylim([1.86,1.96]);
-if Ti == 1351
-    ylim([1.98,2.015]);
+ylim([2.45,2.6]);
+if Ti == 2071
+    ylim([2.3,2.48]);
 end
-if Ti == 1591
-    ylim([2.27,2.4]);
-end
-if Ti == 1681
-    ylim([2.32,2.47]);
-end
-if Ti == 1771
-    ylim([2.35,2.57]);
+if Ti == 1951
+    ylim([2.42,2.6]);
 end
 xlim(xlim_range);
 set(gca,'XTick',xticks,'XTickLabel',{});
 set(gca,'XTick',xticks,'XTickLabel',xticks_label,'XTickLabelRotation',0);
-
-
-
-
+% set(gca,'TickDir','out','TickLength',[0.012,0.03]);
 
 %% FUNCTIONS
 % drift omega
@@ -458,7 +420,7 @@ while ~isempty(temp)
 end
 end
 
-function [Particle,Fields,Time,Numerics] = Traj_setting(sim_trange_set,E_set,L_set,Phi_set,PAeq_set,Ei,PAi,Ti,theo_omega_d,Eparams)
+function [Particle,Fields,Time,Numerics] = Traj_setting(sim_trange_set,E_set,L_set,Phi_set,PAeq_set,Ei,PAi,Ti,theo_omega_d)
 
 % initial condition
 Particle.Charge = -1.0; %[elementary charge]
@@ -479,11 +441,12 @@ ihour = hour(timestart);
 iminute = minute(timestart);
 isecond = second(timestart);
 
-% Efield profile
-E_PeakTime = Eparams.E_PeakTime; 
-E_Amplitude = Eparams.E_Amplitude; 
-E_Parameters = Eparams.E_Parameters; 
-E_ZeroTime = Eparams.E_ZeroTime; 
+% parameters for electric field
+duration = 480;
+E_PeakTime = datetime(2024,09,24,18,50,00);
+E_Amplitude = [-1.5,8,-6.5]; %[mV/m]
+E_Parameters = [0.1,duration/2];  %[alpha,sigma]
+E_ZeroTime = datetime(2024,09,24,18,00,00);
 
 % background fields
 Fields.B_field.Field_Model  = 0; % 0 - analytical dipole, 1 - IGRF

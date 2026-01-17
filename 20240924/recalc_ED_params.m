@@ -38,7 +38,7 @@ trans_matrix = [cos_thetan*cos_phin,cos_thetan*sin_phin,-sin_thetan;...
     sin_thetan*cos_phin,sin_thetan*sin_phin,cos_thetan];
 
 % eccentricity
-x0 = -0.092739;
-y0 = 0.086886;
-z0 = 0.096215;
+x0 = -0.092742;
+y0 = 0.087047;
+z0 = 0.096301;
 end
